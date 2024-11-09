@@ -3,3 +3,4 @@ streamlit
 pdfplumber
 nltk
 transformers
+matplotlib
