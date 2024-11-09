@@ -4,3 +4,4 @@ pdfplumber
 nltk
 transformers
 matplotlib
+torch
