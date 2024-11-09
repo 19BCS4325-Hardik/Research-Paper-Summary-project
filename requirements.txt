@@ -2,3 +2,4 @@ pdfplumber
 streamlit
 pdfplumber
 nltk
+transformers
