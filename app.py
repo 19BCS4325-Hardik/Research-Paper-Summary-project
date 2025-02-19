@@ -7,7 +7,11 @@ import nltk
 from transformers import pipeline
 import matplotlib.pyplot as plt
 
+# Download stopwords
 nltk.download('stopwords')
+
+# Maximum file size (20MB)
+MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB in bytes
 
 @st.cache_resource 
 def load_summarizer():
@@ -17,6 +21,7 @@ def load_summarizer():
 def load_sentiment_analyzer():
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", framework="pt")  # Specify PyTorch
 
+# Load models
 summarizer = load_summarizer()
 sentiment_analyzer = load_sentiment_analyzer()
 
@@ -74,39 +79,43 @@ def generate_summary(text, summary_type):
         summary = f"An error occurred during summarization: {str(e)}"
     return summary
 
-st.title("PDF Analysis Tool with Summary and Sentiment")
+# Streamlit App
+st.title("PDF Insight Analyzer")
 st.write("Upload a PDF file to analyze the most frequent words, sentiment, and generate summaries.")
 
 uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
 
-summary_type = st.selectbox("Choose Summary Type", ["Quick Summary", "Detailed Summary", "Section-Specific Summary"])
-
 if uploaded_file is not None:
-    with st.spinner("Extracting text from PDF..."):
-        text = extract_text_from_pdf(uploaded_file)
-    
-    if len(text.strip()) == 0:
-        st.error("No readable text found in the uploaded PDF. Please try a different file.")
+    if uploaded_file.size > MAX_FILE_SIZE:
+        st.error("File size exceeds 20MB. Please upload a smaller PDF.")
     else:
-        with st.spinner("Calculating top words..."):
-            top_words, top_words_text = get_top_words(text)
-        st.subheader("Top 5 Words (Excluding Stop Words):")
-        st.write(f"The most frequent words are: {top_words_text}")
-        
-        words, counts = zip(*top_words)
-        plt.figure(figsize=(8, 4))
-        plt.bar(words, counts, color="skyblue")
-        plt.xlabel("Words")
-        plt.ylabel("Frequency")
-        plt.title("Top 5 Frequent Words")
-        st.pyplot(plt)
+        summary_type = st.selectbox("Choose Summary Type", ["Quick Summary", "Detailed Summary", "Section-Specific Summary"])
 
-        with st.spinner("Analyzing sentiment..."):
-            sentiment = analyze_sentiment(text)
-        st.subheader("Sentiment Analysis:")
-        st.write(f"Label: {sentiment['label']}, Score: {sentiment['score']:.2f}")
+        with st.spinner("Extracting text from PDF..."):
+            text = extract_text_from_pdf(uploaded_file)
         
-        with st.spinner(f"Generating {summary_type.lower()}..."):
-            summary = generate_summary(text, summary_type)
-        st.subheader(f"{summary_type}:")
-        st.write(summary)
+        if len(text.strip()) == 0:
+            st.error("No readable text found in the uploaded PDF. Please try a different file.")
+        else:
+            with st.spinner("Calculating top words..."):
+                top_words, top_words_text = get_top_words(text)
+            st.subheader("Top 5 Words (Excluding Stop Words):")
+            st.write(f"The most frequent words are: {top_words_text}")
+            
+            words, counts = zip(*top_words)
+            plt.figure(figsize=(8, 4))
+            plt.bar(words, counts, color="skyblue")
+            plt.xlabel("Words")
+            plt.ylabel("Frequency")
+            plt.title("Top 5 Frequent Words")
+            st.pyplot(plt)
+
+            with st.spinner("Analyzing sentiment..."):
+                sentiment = analyze_sentiment(text)
+            st.subheader("Sentiment Analysis:")
+            st.write(f"Label: {sentiment['label']}, Score: {sentiment['score']:.2f}")
+            
+            with st.spinner(f"Generating {summary_type.lower()}..."):
+                summary = generate_summary(text, summary_type)
+            st.subheader(f"{summary_type}:")
+            st.write(summary)
